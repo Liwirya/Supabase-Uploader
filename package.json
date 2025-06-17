@@ -1,7 +1,7 @@
 {
-  "name": "file-uploader",
+  "name": "senka-uploader",
   "version": "1.0.0",
-  "description": "File uploader dengan Supabase dan Express",
+  "description": "Menggunakan Database SupaBase",
   "main": "index.js",
   "scripts": {
     "start": "node index.js"
