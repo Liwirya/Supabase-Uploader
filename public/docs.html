@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Senka Uploader API Docs</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6oNsWfGAf3IINokB/xLcFNjGkL/W6yW1sJ1L9/d4f4z3Q==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style type="text/tailwindcss">
+        @layer base {
+            html {
+                font-family: 'Poppins', system-ui, sans-serif;
+            }
+            code, pre {
+                font-family: 'JetBrains Mono', monospace;
+            }
+            pre {
+                @apply bg-slate-800/70 p-4 rounded-lg overflow-x-auto;
+            }
+        }
+    </style>
+</head>
+<body class="bg-[#101018] text-slate-100 min-h-screen p-4 sm:p-8 bg-[radial-gradient(circle_at_15%_50%,_rgba(0,191,255,0.1),_transparent_40%),radial-gradient(circle_at_85%_30%,_rgba(138,43,226,0.1),_transparent_40%)]">
+
+    <main class="w-full max-w-3xl mx-auto py-8">
+        <div class="text-center mb-10">
+            <h1 class="text-5xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-sky-400 to-violet-500 mb-3">
+                Senka Uploader API Docs
+            </h1>
+            <p class="text-slate-400 text-lg">Dokumentasi untuk integrasi API unggah file Senka.</p>
+            <a href="/" class="text-sky-400 hover:underline text-sm mt-4 inline-block">
+                <i class="fas fa-home mr-1"></i> Kembali ke Uploader
+            </a>
+        </div>
+
+        <div class="bg-slate-900/50 backdrop-blur-xl border border-slate-700/50 rounded-2xl shadow-2xl shadow-black/30 p-6 sm:p-8">
+            <h2 class="text-2xl font-semibold mb-4 text-sky-300">Pengenalan</h2>
+            <p class="text-slate-300 leading-relaxed mb-6">
+                API Senka Uploader menyediakan cara sederhana untuk mengunggah file ke layanan penyimpanan Supabase Anda. Anda dapat mengintegrasikan API ini ke aplikasi Anda untuk mengelola unggahan file secara terprogram.
+            </p>
+
+            ---
+
+            <h2 class="text-2xl font-semibold mb-4 text-sky-300 mt-8">Unggah File</h2>
+            <p class="text-slate-300 mb-2">Endpoint ini digunakan untuk mengunggah satu file gambar atau dokumen.</p>
+            
+            <div class="mb-4">
+                <span class="inline-block bg-green-600 text-white text-xs font-bold px-3 py-1 rounded-full mr-2">POST</span>
+                <code class="text-lime-300 text-lg">/api/upload</code>
+            </div>
+
+            <h3 class="text-xl font-medium mb-2 text-slate-200">Request</h3>
+            <p class="text-slate-300 mb-2">Gunakan tipe konten <code>multipart/form-data</code>.</p>
+            <p class="text-slate-300 mb-2">Form data harus berisi:</p>
+            <ul class="list-disc list-inside text-slate-300 ml-4 mb-4">
+                <li><code>file</code>: (Required) File yang akan diunggah.</li>
+            </ul>
+
+            <h4 class="text-lg font-medium mb-2 text-slate-200">Contoh cURL</h4>
+            <pre><code class="language-bash">curl -X POST \
+  http://localhost:5000/api/upload \
+  -H "Content-Type: multipart/form-data" \
+  -F "file=@/path/to/your/image.jpg"</code></pre>
+
+            <h4 class="text-lg font-medium mb-2 text-slate-200">Contoh JavaScript (Fetch API)</h4>
+            <pre><code class="language-javascript">const uploadFile = async (file) => {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  try {
+    const response = await fetch('http://localhost:5000/api/upload', {
+      method: 'POST',
+      body: formData
+    });
+
+    const result = await response.json();
+    if (response.ok) {
+      console.log('Upload berhasil:', result);
+      // result.fileUrl akan berisi URL file yang diupload
+    } else {
+      console.error('Upload gagal:', result.message);
+    }
+  } catch (error) {
+    console.error('Terjadi kesalahan:', error);
+  }
+};
+
+// Contoh penggunaan:
+// const myFile = document.getElementById('myFileInput').files[0];
+// if (myFile) {
+//   uploadFile(myFile);
+// }
+</code></pre>
+
+            <h3 class="text-xl font-medium mb-2 mt-6 text-slate-200">Response (JSON)</h3>
+            <p class="text-slate-300 mb-2">Response yang berhasil akan mengembalikan status <code>200 OK</code> dengan data file yang diunggah.</p>
+            <pre><code class="language-json">{
+  "success": true,
+  "message": "File berhasil diupload!",
+  "fileName": "nama-file-asli.jpg",
+  "fileSize": 123456,
+  "fileType": "image/jpeg",
+  "fileUrl": "https://your-supabase-domain.storage.supabase.co/storage/v1/object/public/your-bucket/unik-filename.jpg",
+  "storagePath": "unik-filename.jpg"
+}</code></pre>
+            <p class="text-slate-300 mb-2 mt-4">Response error akan mengembalikan status sesuai dengan kesalahan (misal <code>400 Bad Request</code>, <code>413 Payload Too Large</code>, <code>500 Internal Server Error</code>) dengan detail kesalahan.</p>
+            <pre><code class="language-json">{
+  "success": false,
+  "message": "Tidak ada file yang diupload.",
+  "error": "Error details here (optional)"
+}</code></pre>
+            <pre><code class="language-json">{
+  "success": false,
+  "message": "Ukuran file melebihi batas maksimal (50MB).",
+  "error": "LIMIT_FILE_SIZE"
+}</code></pre>
+
+            ---
+
+            <h2 class="text-2xl font-semibold mb-4 text-sky-300 mt-8">Melihat/Mengunduh File</h2>
+            <p class="text-slate-300 mb-2">Endpoint ini berfungsi sebagai proxy untuk melihat atau mengunduh file yang telah diunggah.</p>
+            
+            <div class="mb-4">
+                <span class="inline-block bg-blue-600 text-white text-xs font-bold px-3 py-1 rounded-full mr-2">GET</span>
+                <code class="text-lime-300 text-lg">/files/:fileName</code>
+            </div>
+
+            <h3 class="text-xl font-medium mb-2 text-slate-200">Parameter Path</h3>
+            <ul class="list-disc list-inside text-slate-300 ml-4 mb-4">
+                <li><code>:fileName</code>: Nama file unik yang disimpan di Supabase Storage (didapat dari respon unggah atau dari URL asli Supabase). Contoh: <code>1701234567890-abcdefg.jpg</code></li>
+            </ul>
+
+            <h4 class="text-lg font-medium mb-2 text-slate-200">Contoh cURL</h4>
+            <pre><code class="language-bash">curl -X GET \
+  http://localhost:5000/files/1701234567890-abcdefg.jpg</code></pre>
+
+            <h4 class="text-lg font-medium mb-2 text-slate-200">Contoh HTML (Langsung di Browser)</h4>
+            <p class="text-slate-300 mb-2">Anda dapat langsung mengakses URL ini di browser atau menggunakannya sebagai <code>src</code> untuk tag <code>&lt;img&gt;</code> atau <code>&lt;video&gt;</code>:</p>
+            <pre><code class="language-html">&lt;img src="http://localhost:5000/files/1701234567890-abcdefg.jpg" alt="Uploaded Image"&gt;</code></pre>
+
+            <h3 class="text-xl font-medium mb-2 mt-6 text-slate-200">Response</h3>
+            <p class="text-slate-300 mb-2">Response akan berupa data biner file dengan header <code>Content-Type</code> yang sesuai (misal <code>image/jpeg</code>, <code>application/pdf</code>).</p>
+            <pre><code class="language-http">HTTP/1.1 200 OK
+Content-Type: image/jpeg
+Content-Length: 123456
+
+[Binary file data]</code></pre>
+            <p class="text-slate-300 mb-2 mt-4">Jika file tidak ditemukan atau ada kesalahan server, response akan berupa JSON error dengan status yang sesuai.</p>
+
+            ---
+
+            <h2 class="text-2xl font-semibold mb-4 text-sky-300 mt-8">Penanganan Kesalahan Umum</h2>
+            <ul class="list-disc list-inside text-slate-300 ml-4 mb-4">
+                <li><code>400 Bad Request</code>: Tidak ada file yang dikirim dalam request.</li>
+                <li><code>404 Not Found</code>: File tidak ditemukan di bucket penyimpanan.</li>
+                <li><code>413 Payload Too Large</code>: Ukuran file melebihi batas yang diizinkan (50MB).</li>
+                <li><code>500 Internal Server Error</code>: Kesalahan server yang tidak terduga atau masalah dengan Supabase.</li>
+            </ul>
+
+            <p class="text-slate-300 mt-6">Untuk pertanyaan lebih lanjut atau bantuan, silakan hubungi pengembang.</p>
+        </div>
+
+        <footer class="text-center text-slate-500 text-sm mt-10">
+            &copy; 2025 Senka Uploader. Dibuat Oleh Liwirya <i class="fas fa-heart text-red-500 mx-1"></i> dan Supabase.
+        </footer>
+    </main>
+</body>
+</html>

@@ -3,17 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Senka - Web Uploader</title>
+    <title>Senka Uploader - Unggah & Bagikan File</title>
     
-    <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     
-    <!-- Supabase JS -->
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    
-    <!-- Tailwind CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6oNsWfGAf3IINokB/xLcFNjGkL/W6yW1sJ1L9/d4f4z3Q==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
     <script src="https://cdn.tailwindcss.com"></script>
 
     <style type="text/tailwindcss">
@@ -22,139 +19,108 @@
                 font-family: 'Poppins', system-ui, sans-serif;
             }
         }
-        .preview-container img, .preview-container video, .preview-container iframe {
-            max-width: 100%;
-            max-height: 300px;
-            object-fit: contain;
-            border-radius: 8px;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+        /* Custom scrollbar for history */
+        #uploadHistory::-webkit-scrollbar {
+            width: 8px;
         }
-        .history-item {
-            transition: all 0.3s ease;
+        #uploadHistory::-webkit-scrollbar-track {
+            background: #2a3040; /* Darker track */
+            border-radius: 10px;
         }
-        .history-item:hover {
-            background-color: rgba(100, 150, 255, 0.1);
-            transform: translateY(-2px);
+        #uploadHistory::-webkit-scrollbar-thumb {
+            background: #475569; /* Slate-600 like */
+            border-radius: 10px;
         }
-        .toast {
-            animation: slideIn 0.3s ease-out, fadeOut 0.3s ease-in 2.7s forwards;
-        }
-        @keyframes slideIn {
-            from { transform: translateY(20px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
-        }
-        @keyframes fadeOut {
-            to { opacity: 0; }
-        }
-        .progress-bar {
-            transition: width 0.3s ease-in-out;
+        #uploadHistory::-webkit-scrollbar-thumb:hover {
+            background: #64748b; /* Slate-500 like */
         }
     </style>
 </head>
-<body class="bg-[#101018] text-slate-100 min-h-screen flex items-center justify-center p-4 sm:p-6 bg-[radial-gradient(circle_at_15%_50%,_rgba(0,191,255,0.1),_transparent_40%),radial-gradient(circle_at_85%_30%,_rgba(138,43,226,0.1),_transparent_40%)]">
+<body class="bg-[#101018] text-slate-100 min-h-screen flex flex-col items-center justify-center p-4 sm:p-6 bg-[radial-gradient(circle_at_15%_50%,_rgba(0,191,255,0.1),_transparent_40%),radial-gradient(circle_at_85%_30%,_rgba(138,43,226,0.1),_transparent_40%)] overflow-y-auto">
 
-    <main class="w-full max-w-3xl mx-auto">
-        <!-- Main container with glassmorphism effect -->
-        <div class="bg-slate-900/60 backdrop-blur-xl border border-slate-700/50 rounded-2xl shadow-2xl shadow-black/30 p-6 sm:p-10 transition-all duration-300">
+    <main class="w-full max-w-2xl mx-auto my-8">
+        <div class="bg-slate-900/50 backdrop-blur-xl border border-slate-700/50 rounded-2xl shadow-2xl shadow-black/30 p-6 sm:p-10 transition-all duration-300">
             
-            <!-- Header with gradient text -->
             <div class="text-center mb-8">
-                <h2 class="text-4xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-sky-400 to-violet-500 animate-pulse">
-                    Liwirya Senka Uploader
+                <h2 class="text-4xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-sky-400 to-violet-500">
+                    Senka Uploader
                 </h2>
-                <p class="text-slate-300 mt-2 text-sm sm:text-base">Unggah, pratinjau, dan kelola file Anda dengan aman dan mudah.</p>
+                <p class="text-slate-400 mt-2">Unggah dan bagikan file Anda dengan mudah.</p>
+                <a href="/docs.html" target="_blank" class="text-sky-400 hover:underline text-sm mt-2 inline-block">
+                    <i class="fas fa-book mr-1"></i> Dokumentasi API
+                </a>
             </div>
             
-            <!-- Drag and drop area -->
             <div class="relative my-8">
-                <label for="fileInput" class="file-input-label block p-10 border-2 border-dashed border-slate-600 rounded-2xl text-center cursor-pointer bg-slate-800/30 transition-all duration-300 ease-in-out hover:border-sky-500 hover:bg-slate-800/50 [&.drag-over]:border-sky-500 [&.drag-over]:bg-sky-600/20">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="mx-auto text-slate-300 mb-4 transition-colors duration-300">
-                        <path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"></path>
-                        <path d="M12 12v9"></path>
-                        <path d="m16 16-4-4-4 4"></path>
-                    </svg>
-                    <span class="mt-2 block text-slate-200 sm:text-lg font-semibold">Tarik file ke sini atau <span class="text-sky-400 hover:underline">klik untuk memilih</span></span>
-                    <span class="block text-xs text-slate-400 mt-1">Maks Upload File: 50MB <br>Format: jpg, png, mp4, mp3, pdf, dll.</br></span>
+                <label for="fileInput" class="file-input-label block p-10 border-2 border-dashed border-slate-600 rounded-2xl text-center cursor-pointer bg-slate-800/20 transition-all duration-300 ease-in-out hover:border-sky-500 hover:bg-slate-800/50 [&.drag-over]:border-sky-500 [&.drag-over]:bg-slate-800/50">
+                    
+                    <i class="fas fa-cloud-upload-alt text-slate-400 text-5xl mb-4 transition-colors duration-300"></i>
+                    
+                    <span class="mt-2 block text-slate-300 sm:text-base font-semibold">Tarik file ke sini atau <span class="text-sky-400">klik untuk memilih</span></span>
+                    <span class="block text-xs text-slate-500 mt-1">Ukuran file maksimal: 50MB</span>
                 </label>
-                <input type="file" id="fileInput" class="absolute top-0 left-0 w-full h-full opacity-0 cursor-pointer" accept="image/*,video/*,audio/*,application/pdf,text/plain,text/html,text/css,application/javascript"/>
+                <input type="file" id="fileInput" class="absolute top-0 left-0 w-full h-full opacity-0 cursor-pointer"/>
             </div>
             
-            <!-- Selected file info display -->
-            <div id="selectedFile" class="hidden mt-6 p-4 bg-slate-800/50 rounded-xl border-l-4 border-sky-500 flex-col gap-2 animate-fade-in">
+            <div id="selectedFile" class="hidden mt-6 p-4 bg-slate-800/50 rounded-xl border-l-4 border-sky-500 flex-col gap-1">
                 <div class="flex items-center">
-                    <span id="fileIcon" class="mr-3 text-2xl"></span>
-                    <span id="fileNameDisplay" class="text-slate-100 font-medium"></span>
+                    <span id="fileIcon" class="mr-3 text-xl w-6 text-center flex-shrink-0"></span>
+                    <span id="fileNameDisplay" class="text-slate-100 font-medium truncate flex-1"></span>
+                    <button id="clearFileBtn" class="ml-auto text-slate-400 hover:text-red-500 transition"><i class="fas fa-times-circle"></i></button>
                 </div>
                 <span id="fileSize" class="text-sm text-slate-400 ml-[34px]"></span>
-            </div>
-            
-            <!-- Upload Progress Bar -->
-            <div id="progressContainer" class="hidden mt-4">
-                <div class="w-full bg-slate-700 rounded-full h-2.5">
-                    <div id="progressBar" class="bg-sky-500 h-2.5 rounded-full progress-bar" style="width: 0%"></div>
+                <div id="imagePreviewContainer" class="hidden mt-4 bg-slate-900 rounded-lg border border-slate-700 p-2 text-center max-h-80 overflow-y-auto">
+                    <p class="text-slate-400 text-sm mb-2">Pratinjau Gambar:</p>
+                    <img id="imagePreview" src="" alt="Image Preview" class="max-w-full h-auto mx-auto object-contain">
                 </div>
-                <span id="progressText" class="text-sm text-slate-400 mt-1"></span>
             </div>
             
-            <!-- Upload Button with Gradient -->
             <div class="mt-6">
-                <button id="uploadBtn" class="w-full py-3 px-6 bg-gradient-to-r from-sky-500 to-violet-600 rounded-lg text-slate-50 font-semibold uppercase tracking-wider transition-all duration-300 ease-in-out shadow-[0_4px_20px_rgba(100,150,255,0.2)] hover:shadow-xl hover:shadow-sky-500/30 hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100 disabled:shadow-none">
+                 <button id="uploadBtn" class="w-full py-3 px-6 bg-gradient-to-r from-sky-500 to-violet-600 rounded-lg text-slate-50 font-semibold uppercase tracking-wider transition-all duration-300 ease-in-out shadow-[0_4px_20px_rgba(100,150,255,0.2)] hover:shadow-xl hover:shadow-sky-500/20 hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100 disabled:shadow-[0_4px_20px_rgba(100,150,255,0.2)]">
                     Upload File
                 </button>
             </div>
             
-            <!-- Result Section -->
             <div class="mt-8">
-                <h3 class="mb-4 text-lg font-medium inline-block pb-1 border-b-2 border-sky-600">Hasil Upload</h3>
-                <div id="urlResult" class="bg-slate-900/70 p-6 rounded-2xl mt-2 border border-slate-700 min-h-[120px] flex flex-col transition-all duration-300 text-sm animate-fade-in
+                <h3 class="mb-4 text-lg font-medium inline-block pb-1 border-b-2 border-slate-600">Hasil Upload</h3>
+                
+                <div id="urlResult" class="bg-slate-900/70 p-5 rounded-2xl mt-2 border border-slate-700 min-h-[120px] flex flex-col transition-all duration-300 text-sm 
                                          empty:justify-center empty:items-center empty:text-center 
-                                         empty:before:content-['Hasil_akan_ditampilkan_di_sini.'] empty:before:text-slate-400
+                                         empty:before:content-['Hasil_akan_ditampilkan_di_sini.'] empty:before:text-slate-500
                                          [&:not(:empty)]:items-stretch [&:not(:empty)]:text-left">
                 </div>
             </div>
 
-            <!-- Upload History Section -->
-            <div class="mt-8">
-                <div class="flex justify-between items-center mb-4">
-                    <h3 class="text-lg font-medium inline-block pb-1 border-b-2 border-sky-600">Riwayat Upload</h3>
-                    <button id="clearHistoryBtn" class="text-sm text-red-400 hover:text-red-300 transition flex items-center gap-1">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M3 6h18"></path>
-                            <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
-                            <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
-                        </svg>
-                        Hapus Riwayat
-                    </button>
-                </div>
-                <div id="uploadHistory" class="bg-slate-900/70 p-6 rounded-2xl mt-2 border border-slate-700 max-h-[300px] overflow-y-auto flex flex-col gap-3 text-sm animate-fade-in
-                                             empty:before:content-['Belum_ada_riwayat_upload.'] empty:before:text-slate-400"></div>
+            <div class="mt-10">
+                <h3 class="mb-4 text-lg font-medium inline-block pb-1 border-b-2 border-slate-600">Riwayat Upload</h3>
+                <div id="uploadHistory" class="bg-slate-900/70 p-5 rounded-2xl mt-2 border border-slate-700 min-h-[100px] max-h-96 overflow-y-auto flex flex-col gap-3
+                                          empty:justify-center empty:items-center empty:text-center
+                                          empty:before:content-['Riwayat_upload_akan_muncul_di_sini.'] empty:before:text-slate-500">
+                    </div>
             </div>
 
-            <!-- Toast Notification -->
-            <div id="toast" class="fixed bottom-4 right-4 hidden p-3 bg-slate-800/90 text-slate-100 rounded-lg shadow-lg border border-slate-700/50"></div>
         </div>
     </main>
+
+    <div id="notificationModal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50 hidden transition-opacity duration-300 opacity-0">
+        <div class="bg-slate-800 p-6 rounded-lg shadow-xl max-w-sm w-full border border-slate-700 text-center relative">
+            <button id="closeModal" class="absolute top-2 right-2 text-slate-400 hover:text-slate-200 text-2xl">&times;</button>
+            <i id="modalIcon" class="text-5xl mb-4"></i>
+            <h4 id="modalTitle" class="text-xl font-semibold mb-2"></h4>
+            <p id="modalMessage" class="text-slate-300"></p>
+            <button id="modalActionBtn" class="mt-5 py-2 px-4 bg-sky-600 rounded-md text-slate-50 font-semibold hover:bg-sky-500 hidden">OK</button>
+        </div>
+    </div>
+
 
     <script>
     document.addEventListener('DOMContentLoaded', () => {
 
-        // --- KONFIGURASI ---
-        const CONFIG = {
-            SUPABASE_URL: 'https://ycxcrxdnzcyczbktfzes.supabase.co',
-            SUPABASE_ANON_KEY: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InljeGNyeGRuemN5Y3pia3RmemVzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTAxNDU2NzAsImV4cCI6MjA2NTcyMTY3MH0.vwPxPM8hkSCCxLcJRGyiXJ7qzVmkgkzzdHK0mvk5sCg',
-            BUCKET_NAME: 'senka',
-            CUSTOM_DOMAIN: 'senka-uploader-production.up.railway.app',
-            MAX_FILE_SIZE: 50 * 1024 * 1024, // 50MB dalam bytes
-            ALLOWED_MIME_TYPES: [
-                'image/jpeg', 'image/png', 'image/gif', 'image/svg+xml',
-                'video/mp4', 'video/quicktime', 'video/x-msvideo',
-                'audio/mpeg', 'audio/wav',
-                'application/pdf', 'text/plain', 'text/html', 'text/css', 'application/javascript'
-            ]
-        };
+        // --- BACKEND API CONFIGURATION ---
+        // Sesuaikan dengan URL server backend Anda
+        const API_BASE_URL = window.location.origin; // http://localhost:5000 (otomatis mendeteksi)
 
-        // --- INISIALISASI ---
-        const supabase = window.supabase.createClient(CONFIG.SUPABASE_URL, CONFIG.SUPABASE_ANON_KEY);
+        // --- DOM ELEMENT REFERENCES ---
         const fileInput = document.getElementById('fileInput');
         const uploadBtn = document.getElementById('uploadBtn');
         const urlResult = document.getElementById('urlResult');
@@ -163,361 +129,360 @@
         const fileSizeDisplay = document.getElementById('fileSize');
         const fileIconDisplay = document.getElementById('fileIcon');
         const fileInputLabel = document.querySelector('.file-input-label');
-        const uploadHistory = document.getElementById('uploadHistory');
-        const clearHistoryBtn = document.getElementById('clearHistoryBtn');
-        const progressContainer = document.getElementById('progressContainer');
-        const progressBar = document.getElementById('progressBar');
-        const progressText = document.getElementById('progressText');
-        const toast = document.getElementById('toast');
+        const imagePreviewContainer = document.getElementById('imagePreviewContainer');
+        const imagePreviewImg = document.getElementById('imagePreview');
+        const uploadHistoryDiv = document.getElementById('uploadHistory');
+        const clearFileBtn = document.getElementById('clearFileBtn');
 
-        // --- STATE & DATA ---
-        const fileCache = new Map();
-        const fileIcons = {
-            'pdf': '📄', 'zip': '🗄️', 'rar': '🗄️', '7z': '🗄️', 'js': '📜', 'json': '📦',
-            'html': '🌐', 'css': '🎨', 'png': '🖼️', 'jpg': '🖼️', 'jpeg': '🖼️', 'gif': '🖼️',
-            'svg': '🖼️', 'mp4': '🎥', 'mov': '🎥', 'avi': '🎥', 'mp3': '🎵', 'wav': '🎵',
-            'txt': '📝', 'doc': '📄', 'docx': '📄', 'xls': '📊', 'xlsx': '📊', 'ppt': '📽️',
-            'pptx': '📽️', 'default': '📁'
+        // Modal Elements
+        const notificationModal = document.getElementById('notificationModal');
+        const closeModalBtn = document.getElementById('closeModal');
+        const modalIcon = document.getElementById('modalIcon');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalMessage = document.getElementById('modalMessage');
+        const modalActionBtn = document.getElementById('modalActionBtn');
+
+
+        // --- STATE & CACHE ---
+        // Cache tidak lagi digunakan karena setiap upload akan melalui backend
+        // const fileCache = new Map();
+        const uploadHistory = JSON.parse(localStorage.getItem('senkaUploadHistory')) || []; // Load history from localStorage
+        const fileIcons = { 
+            'pdf': '<i class="fas fa-file-pdf text-red-500"></i>', 
+            'zip': '<i class="fas fa-file-archive text-yellow-500"></i>', 
+            'rar': '<i class="fas fa-file-archive text-yellow-500"></i>', 
+            '7z': '<i class="fas fa-file-archive text-yellow-500"></i>', 
+            'js': '<i class="fab fa-js-square text-yellow-400"></i>', 
+            'json': '<i class="fas fa-file-code text-blue-400"></i>', 
+            'html': '<i class="fab fa-html5 text-orange-500"></i>', 
+            'css': '<i class="fab fa-css3-alt text-blue-500"></i>', 
+            'png': '<i class="fas fa-file-image text-purple-400"></i>', 
+            'jpg': '<i class="fas fa-file-image text-purple-400"></i>', 
+            'jpeg': '<i class="fas fa-file-image text-purple-400"></i>', 
+            'gif': '<i class="fas fa-file-image text-purple-400"></i>', 
+            'svg': '<i class="fas fa-file-image text-purple-400"></i>', 
+            'mp4': '<i class="fas fa-file-video text-pink-500"></i>', 
+            'mov': '<i class="fas fa-file-video text-pink-500"></i>', 
+            'avi': '<i class="fas fa-file-video text-pink-500"></i>', 
+            'mp3': '<i class="fas fa-file-audio text-green-500"></i>', 
+            'wav': '<i class="fas fa-file-audio text-green-500"></i>', 
+            'txt': '<i class="fas fa-file-alt text-gray-400"></i>', 
+            'doc': '<i class="fas fa-file-word text-blue-600"></i>', 
+            'docx': '<i class="fas fa-file-word text-blue-600"></i>', 
+            'xls': '<i class="fas fa-file-excel text-green-600"></i>', 
+            'xlsx': '<i class="fas fa-file-excel text-green-600"></i>', 
+            'ppt': '<i class="fas fa-file-powerpoint text-orange-600"></i>', 
+            'pptx': '<i class="fas fa-file-powerpoint text-orange-600"></i>', 
+            'default': '<i class="fas fa-file text-slate-400"></i>' 
         };
 
-        // --- FUNGSI UTAMA ---
+        // --- CORE FUNCTIONS ---
 
         /**
-         * Menangani proses upload file ke Supabase Storage.
-         * @returns {Promise<void>}
+         * Mengirim file ke API backend untuk diupload.
          */
-        async function uploadFile() {
+        const uploadFile = async () => {
             const file = fileInput.files[0];
             if (!file) {
-                showToast('Pilih file terlebih dahulu', 'error');
-                return;
-            }
-
-            // Validasi ukuran file
-            if (file.size > CONFIG.MAX_FILE_SIZE) {
-                showToast('Ukuran file melebihi batas 50MB', 'error');
-                return;
-            }
-
-            // Validasi jenis file
-            if (!CONFIG.ALLOWED_MIME_TYPES.includes(file.type)) {
-                showToast('Jenis file tidak diizinkan. Gunakan format: jpg, png, mp4, mp3, pdf, dll.', 'error');
+                showModal('Peringatan', 'Pilih file terlebih dahulu!', 'warning');
                 return;
             }
 
             setLoadingState(true);
-            showProgress(0);
+            renderLoadingMessage();
+            urlResult.innerHTML = ''; // Bersihkan hasil sebelumnya
+
+            const formData = new FormData();
+            formData.append('file', file); // 'file' adalah nama field yang diharapkan oleh Multer di backend
 
             try {
-                // Cek duplikat file menggunakan hash
-                const fileHash = await generateFileHash(file);
-                if (fileCache.has(fileHash)) {
-                    renderSuccessMessage(fileCache.get(fileHash), file);
-                    updateHistory(file.name, fileCache.get(fileHash));
-                    showToast('File sudah diupload sebelumnya', 'success');
-                    return;
-                }
+                const response = await fetch(`${API_BASE_URL}/api/upload`, {
+                    method: 'POST',
+                    body: formData // FormData secara otomatis mengatur Content-Type: multipart/form-data
+                });
 
-                // Siapkan path file
-                const fileExt = file.name.split('.').pop()?.toLowerCase() || 'unknown';
-                const randomId = Math.random().toString(36).substring(2, 10);
-                const filePath = `${randomId}.${fileExt}`;
-
-                // Simulasi progres upload (karena Supabase tidak menyediakan progres langsung)
-                let progress = 0;
-                const progressInterval = setInterval(() => {
-                    progress = Math.min(progress + 10, 90);
-                    showProgress(progress);
-                }, 500);
-
-                // Upload file ke Supabase
-                const { data, error } = await supabase.storage
-                    .from(CONFIG.BUCKET_NAME)
-                    .upload(filePath, file, { contentType: file.type, upsert: false });
-
-                clearInterval(progressInterval);
-                showProgress(100);
-
-                if (error || !data) {
-                    throw error || new Error('Upload gagal, server tidak memberikan respons.');
-                }
-
-                // Buat URL kustom
-                const customDomainUrl = `${CONFIG.CUSTOM_DOMAIN}/${filePath}`;
-                
-                // Simpan ke cache dan riwayat
-                fileCache.set(fileHash, customDomainUrl);
-                renderSuccessMessage(customDomainUrl, file);
-                updateHistory(file.name, customDomainUrl);
-                showToast('Upload berhasil!', 'success');
-
-            } catch (error) {
-                console.error('Detail Error:', error);
-                showToast(`Gagal upload: ${error.message}`, 'error');
-            } finally {
-                setLoadingState(false);
-                setTimeout(() => progressContainer.classList.add('hidden'), 1000);
-            }
-        }
-
-        /**
-         * Menghapus file dari Supabase Storage.
-         * @param {string} fileName - Nama file di Supabase.
-         * @returns {Promise<void>}
-         */
-        async function deleteFile(fileName) {
-            try {
-                const response = await fetch(`/delete/${fileName}`, { method: 'DELETE' });
                 const result = await response.json();
 
-                if (!response.ok) {
-                    throw new Error(result.error || 'Gagal menghapus file');
+                if (response.ok && result.success) {
+                    renderSuccessMessage(result.fileUrl);
+                    addUploadToHistory(result.fileName, result.fileUrl);
+                    showModal('Sukses', 'File berhasil diupload!', 'success');
+                } else {
+                    renderErrorMessage(result.message || 'Terjadi kesalahan saat upload.');
+                    showModal('Gagal', result.message || 'Terjadi kesalahan saat upload.', 'error');
                 }
 
-                // Hapus dari riwayat
-                const history = JSON.parse(localStorage.getItem('uploadHistory') || '[]');
-                const updatedHistory = history.filter(item => !item.url.endsWith(fileName));
-                localStorage.setItem('uploadHistory', JSON.stringify(updatedHistory));
-                renderHistory();
-                showToast('File berhasil dihapus', 'success');
             } catch (error) {
-                console.error('Gagal menghapus file:', error);
-                showToast(`Gagal menghapus file: ${error.message}`, 'error');
+                console.error("Detail Error:", error);
+                renderErrorMessage(`Koneksi gagal atau kesalahan server: ${error.message}`);
+                showModal('Gagal', `Tidak dapat terhubung ke server atau terjadi kesalahan: ${error.message}`, 'error');
+            } finally {
+                setLoadingState(false);
+                clearSelectedFile(); // Clear selected file info and input
             }
-        }
-
-        // --- FUNGSI UI ---
-
+        };
+        
         /**
-         * Menampilkan bilah progres upload.
-         * @param {number} percentage - Persentase progres (0-100).
+         * Menambahkan item ke riwayat upload.
+         * @param {string} fileName - Nama file asli.
+         * @param {string} fileUrl - URL file yang diupload.
          */
-        function showProgress(percentage) {
-            progressContainer.classList.remove('hidden');
-            progressBar.style.width = `${percentage}%`;
-            progressText.textContent = `Mengupload: ${percentage}%`;
-        }
-
-        /**
-         * Menampilkan notifikasi toast.
-         * @param {string} message - Pesan notifikasi.
-         * @param {'success' | 'error'} type - Jenis notifikasi.
-         */
-        function showToast(message, type) {
-            toast.textContent = message;
-            toast.className = `fixed bottom-4 right-4 p-3 rounded-lg shadow-lg border border-slate-700/50 toast ${type === 'success' ? 'bg-green-600/90 text-white' : 'bg-red-600/90 text-white'}`;
-            toast.classList.remove('hidden');
-            setTimeout(() => toast.classList.add('hidden'), 3000);
-        }
-
-        /**
-         * Menampilkan pesan sukses dengan pratinjau file.
-         * @param {string} url - URL file.
-         * @param {File} file - Objek file.
-         */
-        function renderSuccessMessage(url, file) {
-            const fileExt = file.name.split('.').pop()?.toLowerCase();
-            let previewContent = '';
-
-            if (['jpg', 'jpeg', 'png', 'gif', 'svg'].includes(fileExt)) {
-                previewContent = `<img src="${url}" alt="Preview" class="preview-container mt-4">`;
-            } else if (['mp4', 'mov', 'avi'].includes(fileExt)) {
-                previewContent = `<video controls src="${url}" class="preview-container mt-4"></video>`;
-            } else if (['mp3', 'wav'].includes(fileExt)) {
-                previewContent = `<audio controls src="${url}" class="mt-4 w-full"></audio>`;
-            } else if (fileExt === 'pdf') {
-                previewContent = `<iframe src="${url}" class="preview-container mt-4" style="height: 300px;"></iframe>`;
-            } else {
-                previewContent = `<div class="flex items-center gap-2 mt-4"><span class="${fileIcons[fileExt] || fileIcons['default']} text-2xl"></span><a href="${url}" target="_blank" class="text-sky-400 hover:underline">${file.name}</a></div>`;
+        const addUploadToHistory = (fileName, fileUrl) => {
+            const uploadTime = new Date().toLocaleString('id-ID', {
+                year: 'numeric', month: 'short', day: 'numeric',
+                hour: '2-digit', minute: '2-digit', second: '2-digit',
+                hour12: false // Format 24 jam
+            });
+            const historyItem = { fileName, fileUrl, uploadTime };
+            uploadHistory.unshift(historyItem); // Add to the beginning
+            if (uploadHistory.length > 15) { // Batasi riwayat menjadi 15 item
+                uploadHistory.pop();
             }
+            localStorage.setItem('senkaUploadHistory', JSON.stringify(uploadHistory));
+            renderUploadHistory();
+        };
 
+        /**
+         * Menghapus item dari riwayat upload.
+         * @param {number} index - Indeks item yang akan dihapus.
+         */
+        const deleteHistoryItem = (index) => {
+            uploadHistory.splice(index, 1);
+            localStorage.setItem('senkaUploadHistory', JSON.stringify(uploadHistory));
+            renderUploadHistory();
+            showModal('Info', 'Riwayat berhasil dihapus.', 'info');
+        };
+        
+        // --- UI RENDERING FUNCTIONS ---
+
+        /**
+         * Menampilkan status loading di kotak hasil.
+         */
+        const renderLoadingMessage = () => {
+            urlResult.innerHTML = `<div class="flex items-center justify-center gap-3 py-6"><div class="w-5 h-5 border-2 border-sky-500/25 border-t-sky-400 rounded-full animate-spin"></div><span>Mengupload file...</span></div>`;
+        };
+
+        /**
+         * Menampilkan pesan sukses dengan URL file dan tombol salin.
+         * @param {string} url - URL akhir dari file yang diupload.
+         */
+        const renderSuccessMessage = (url) => {
             urlResult.innerHTML = `
                 <strong class="block mb-2 font-semibold text-lime-400">✓ Upload berhasil!</strong>
-                <div class="relative mb-4">
-                    <input readonly value="${url}" class="w-full bg-slate-800/60 text-sky-300 rounded-md py-2 px-3 pr-24 border border-slate-600 focus:outline-none focus:ring-2 focus:ring-sky-500">
-                    <button class="btn-copy absolute right-1 top-1/2 -translate-y-1/2 py-1.5 px-3 bg-sky-600 rounded text-slate-50 font-semibold transition hover:bg-sky-500">Salin</button>
+                <div class="relative flex items-center">
+                    <input readonly value="${url}" class="w-full bg-slate-800/60 text-sky-300 rounded-md py-2 px-3 pr-24 border border-slate-600 focus:outline-none focus:border-sky-500 text-xs sm:text-sm truncate">
+                    <button class="btn-copy absolute right-1 top-1/2 -translate-y-1/2 py-1.5 px-3 bg-sky-600 rounded text-slate-50 font-semibold transition hover:bg-sky-500 text-xs sm:text-sm">Salin</button>
                 </div>
-                ${previewContent}`;
-            urlResult.querySelector('.btn-copy').addEventListener('click', () => copyToClipboard(url));
-        }
-
+                <div class="mt-4 text-center">
+                    <a href="${url}" target="_blank" class="text-sky-400 hover:underline text-sm"><i class="fas fa-external-link-alt mr-1"></i> Lihat File</a>
+                </div>`;
+            urlResult.querySelector('.btn-copy').addEventListener('click', (e) => copyToClipboard(url, e.target, 'Salin'));
+        };
+        
         /**
-         * Menampilkan pesan error.
-         * @param {string} message - Pesan error.
+         * Menampilkan pesan error di kotak hasil.
+         * @param {string} message - Pesan error yang ditampilkan.
          */
-        function renderErrorMessage(message) {
+        const renderErrorMessage = (message) => {
             urlResult.innerHTML = `<strong class="block mb-2 font-semibold text-red-500">✗ Gagal upload:</strong><div class="text-sm text-slate-300">${message}</div>`;
-        }
-
+        };
+        
         /**
-         * Memperbarui informasi file yang dipilih.
+         * Memperbarui UI untuk menampilkan informasi file yang dipilih.
          */
-        function updateFileInfo() {
+        const updateFileInfo = () => {
             const file = fileInput.files[0];
             selectedFileDiv.classList.toggle('hidden', !file);
             selectedFileDiv.classList.toggle('flex', !!file);
-            
+            imagePreviewContainer.classList.add('hidden'); // Sembunyikan preview default
+            imagePreviewImg.src = ''; // Bersihkan src gambar
+
             if (file) {
                 fileNameDisplay.textContent = file.name;
                 fileSizeDisplay.textContent = formatFileSize(file.size);
                 const fileExt = file.name.split('.').pop()?.toLowerCase() || 'default';
-                fileIconDisplay.textContent = fileIcons[fileExt] || fileIcons['default'];
+                fileIconDisplay.innerHTML = fileIcons[fileExt] || fileIcons['default'];
+
+                // Tampilkan preview gambar jika file adalah gambar
+                if (file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        imagePreviewImg.src = e.target.result;
+                        imagePreviewContainer.classList.remove('hidden');
+                    };
+                    reader.readAsDataURL(file);
+                }
             }
-        }
+        };
 
         /**
-         * Memperbarui riwayat upload di UI dan localStorage.
-         * @param {string} fileName - Nama file.
-         * @param {string} url - URL file.
+         * Membersihkan informasi file yang dipilih dan input file.
          */
-        function updateHistory(fileName, url) {
-            const history = JSON.parse(localStorage.getItem('uploadHistory') || '[]');
-            const fileExt = fileName.split('.').pop()?.toLowerCase();
-            const category = ['jpg', 'jpeg', 'png', 'gif', 'svg'].includes(fileExt) ? 'Gambar' :
-                            ['mp4', 'mov', 'avi'].includes(fileExt) ? 'Video' :
-                            ['mp3', 'wav'].includes(fileExt) ? 'Audio' : 'Lainnya';
-            history.unshift({ fileName, url, timestamp: new Date().toLocaleString('id-ID'), category });
-            localStorage.setItem('uploadHistory', JSON.stringify(history));
-            renderHistory();
-        }
-
-        /**
-         * Menampilkan riwayat upload dengan kategori.
-         */
-        function renderHistory() {
-            const history = JSON.parse(localStorage.getItem('uploadHistory') || '[]');
-            const groupedHistory = history.reduce((acc, item) => {
-                acc[item.category] = acc[item.category] || [];
-                acc[item.category].push(item);
-                return acc;
-            }, {});
-
-            uploadHistory.innerHTML = Object.entries(groupedHistory).map(([category, items]) => `
-                <div class="mb-4">
-                    <h4 class="text-sm font-semibold text-sky-400 mb-2">${category}</h4>
-                    ${items.map(item => `
-                        <div class="history-item flex justify-between items-center p-3 rounded-md border border-slate-700/50">
-                            <div class="flex items-center gap-2">
-                                <span class="text-sky-400">${fileIcons[item.fileName.split('.').pop()?.toLowerCase() || 'default']}</span>
-                                <a href="${item.url}" target="_blank" class="text-sky-400 hover:underline">${item.fileName}</a>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <span class="text-xs text-slate-400">${item.timestamp}</span>
-                                <a href="${item.url}" download class="text-green-400 hover:text-green-300" title="Unduh">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                                        <polyline points="7 10 12 15 17 10"></polyline>
-                                        <line x1="12" x2="12" y1="15" y2="3"></line>
-                                    </svg>
-                                </a>
-                                <button class="btn-delete text-red-400 hover:text-red-300" data-filename="${item.url.split('/').pop()}" title="Hapus">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M3 6h18"></path>
-                                        <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
-                                        <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
-                                    </svg>
-                                </button>
-                            </div>
-                        </div>
-                    `).join('')}
-                </div>
-            `).join('');
-
-            // Tambahkan event listener untuk tombol hapus
-            document.querySelectorAll('.btn-delete').forEach(btn => {
-                btn.addEventListener('click', () => deleteFile(btn.dataset.filename));
-            });
-        }
-
-        /**
-         * Menghapus semua riwayat upload.
-         */
-        function clearHistory() {
-            localStorage.removeItem('uploadHistory');
-            renderHistory();
-            showToast('Riwayat berhasil dihapus', 'success');
-        }
-
+        const clearSelectedFile = () => {
+            fileInput.value = ''; // Reset input file
+            selectedFileDiv.classList.add('hidden');
+            selectedFileDiv.classList.remove('flex');
+            fileNameDisplay.textContent = '';
+            fileSizeDisplay.textContent = '';
+            fileIconDisplay.innerHTML = '';
+            imagePreviewContainer.classList.add('hidden');
+            imagePreviewImg.src = '';
+        };
+        
         /**
          * Mengatur status loading pada tombol upload.
-         * @param {boolean} isLoading - Status loading.
+         * @param {boolean} isLoading - Apakah aplikasi sedang mengupload.
          */
-        function setLoadingState(isLoading) {
+        const setLoadingState = (isLoading) => {
             uploadBtn.disabled = isLoading;
             uploadBtn.textContent = isLoading ? 'Mengupload...' : 'Upload File';
-        }
+        };
 
         /**
-         * Menyalin URL ke clipboard.
-         * @param {string} text - URL yang akan disalin.
+         * Merender riwayat upload ke UI.
          */
-        function copyToClipboard(text) {
-            const copyBtn = urlResult.querySelector('.btn-copy');
-            try {
-                if (navigator.clipboard && window.isSecureContext) {
-                    navigator.clipboard.writeText(text).then(() => {
-                        copyBtn.textContent = '✓ Tersalin!';
-                        setTimeout(() => copyBtn.textContent = 'Salin', 2000);
-                        showToast('URL berhasil disalin', 'success');
-                    });
-                } else {
-                    const textArea = document.createElement('textarea');
-                    textArea.value = text;
-                    textArea.style.position = 'absolute';
-                    textArea.style.left = '-9999px';
-                    document.body.appendChild(textArea);
-                    textArea.select();
-                    document.execCommand('copy');
-                    document.body.removeChild(textArea);
-                    copyBtn.textContent = '✓ Tersalin!';
-                    setTimeout(() => copyBtn.textContent = 'Salin', 2000);
-                    showToast('URL berhasil disalin', 'success');
-                }
-            } catch (err) {
-                console.error('Gagal menyalin:', err);
-                copyBtn.textContent = 'Gagal Salin';
-                setTimeout(() => copyBtn.textContent = 'Salin', 2000);
-                showToast('Gagal menyalin URL', 'error');
+        const renderUploadHistory = () => {
+            uploadHistoryDiv.innerHTML = ''; // Clear existing history
+            if (uploadHistory.length === 0) {
+                return; // Tailwind `empty:` utility handles this.
             }
-        }
+
+            uploadHistory.forEach((item, index) => {
+                const historyItemDiv = document.createElement('div');
+                historyItemDiv.className = 'history-item bg-slate-800/80 p-3 rounded-lg flex flex-col sm:flex-row items-start sm:items-center justify-between border border-slate-700 hover:bg-slate-700/80 transition';
+                historyItemDiv.innerHTML = `
+                    <div class="flex-1 truncate mr-4 w-full sm:w-auto">
+                        <a href="${item.fileUrl}" target="_blank" class="text-sky-300 font-medium hover:underline block truncate">${item.fileName}</a>
+                        <span class="text-xs text-slate-400 mt-1 block">${item.uploadTime}</span>
+                    </div>
+                    <div class="flex space-x-2 mt-3 sm:mt-0 flex-shrink-0">
+                        <button class="btn-copy-history py-1 px-2 bg-sky-600 rounded text-slate-50 text-xs transition hover:bg-sky-500" data-url="${item.fileUrl}">Salin</button>
+                        <button class="btn-delete-history py-1 px-2 bg-red-600 rounded text-slate-50 text-xs transition hover:bg-red-500" data-index="${index}">Hapus</button>
+                    </div>
+                `;
+                uploadHistoryDiv.appendChild(historyItemDiv);
+            });
+
+            // Add event listeners for new history items
+            uploadHistoryDiv.querySelectorAll('.btn-copy-history').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const url = e.target.dataset.url;
+                    copyToClipboard(url, e.target, 'Salin');
+                });
+            });
+
+            uploadHistoryDiv.querySelectorAll('.btn-delete-history').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const index = parseInt(e.target.dataset.index);
+                    showModal('Konfirmasi Hapus', 'Anda yakin ingin menghapus riwayat ini?', 'confirm', () => deleteHistoryItem(index));
+                });
+            });
+        };
+
+        // --- UTILITY FUNCTIONS ---
 
         /**
-         * Membuat hash SHA-256 untuk file.
-         * @param {File} file - File yang akan di-hash.
-         * @returns {Promise<string>} - Hash dalam format hex.
+         * Menyalin teks ke clipboard.
+         * @param {string} text - Teks yang akan disalin.
+         * @param {HTMLElement} btnElement - Elemen tombol yang diklik.
+         * @param {string} originalText - Teks asli tombol.
          */
-        async function generateFileHash(file) {
-            const buffer = await file.arrayBuffer();
-            const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
-            const hashArray = Array.from(new Uint8Array(hashBuffer));
-            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-        }
-
+        const copyToClipboard = (text, btnElement, originalText) => {
+            navigator.clipboard.writeText(text).then(() => {
+                if (btnElement) {
+                    btnElement.textContent = '✓ Tersalin!';
+                    setTimeout(() => { btnElement.textContent = originalText; }, 2000);
+                }
+            }).catch(err => {
+                console.error('Gagal menyalin:', err);
+                if (btnElement) {
+                    btnElement.textContent = 'Gagal Salin';
+                    setTimeout(() => { btnElement.textContent = originalText; }, 2000);
+                }
+            });
+        };
+        
         /**
-         * Mengformat ukuran file ke string yang mudah dibaca.
+         * Mengformat ukuran file dalam byte menjadi string yang mudah dibaca.
          * @param {number} bytes - Ukuran file dalam byte.
-         * @returns {string} - Ukuran yang diformat.
+         * @returns {string} - Ukuran file yang diformat (misal, "1.23 MB").
          */
-        function formatFileSize(bytes) {
+        const formatFileSize = (bytes) => {
             if (bytes === 0) return '0 Bytes';
             const k = 1024;
             const sizes = ['Bytes', 'KB', 'MB', 'GB'];
             const i = Math.floor(Math.log(bytes) / Math.log(k));
             return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
-        }
+        };
 
-        // --- EVENT LISTENER ---
+        /**
+         * Menampilkan modal notifikasi kustom.
+         * @param {string} title - Judul modal.
+         * @param {string} message - Pesan modal.
+         * @param {'success'|'error'|'warning'|'info'|'confirm'} type - Tipe modal.
+         * @param {function} [onConfirm] - Callback untuk tipe 'confirm'.
+         */
+        const showModal = (title, message, type, onConfirm = null) => {
+            modalTitle.textContent = title;
+            modalMessage.textContent = message;
+            modalActionBtn.onclick = null;
+            modalActionBtn.classList.add('hidden');
+
+            // Set icon and colors based on type
+            modalIcon.className = 'text-5xl mb-4'; // Reset classes
+            switch (type) {
+                case 'success':
+                    modalIcon.innerHTML = '<i class="fas fa-check-circle text-lime-500"></i>';
+                    break;
+                case 'error':
+                    modalIcon.innerHTML = '<i class="fas fa-times-circle text-red-500"></i>';
+                    break;
+                case 'warning':
+                    modalIcon.innerHTML = '<i class="fas fa-exclamation-triangle text-yellow-500"></i>';
+                    break;
+                case 'info':
+                    modalIcon.innerHTML = '<i class="fas fa-info-circle text-blue-500"></i>';
+                    break;
+                case 'confirm':
+                    modalIcon.innerHTML = '<i class="fas fa-question-circle text-sky-500"></i>';
+                    modalActionBtn.classList.remove('hidden');
+                    modalActionBtn.textContent = 'Ya';
+                    modalActionBtn.onclick = () => {
+                        if (onConfirm) onConfirm();
+                        hideModal();
+                    };
+                    break;
+                default:
+                    modalIcon.innerHTML = '';
+            }
+
+            notificationModal.classList.remove('hidden');
+            setTimeout(() => notificationModal.classList.remove('opacity-0'), 10); // Trigger transition
+        };
+
+        const hideModal = () => {
+            notificationModal.classList.add('opacity-0');
+            setTimeout(() => notificationModal.classList.add('hidden'), 300); // Allow transition to finish
+        };
+
+        // --- EVENT LISTENERS ---
         uploadBtn.addEventListener('click', uploadFile);
         fileInput.addEventListener('change', updateFileInfo);
-        clearHistoryBtn.addEventListener('click', clearHistory);
-
+        clearFileBtn.addEventListener('click', clearSelectedFile);
+        closeModalBtn.addEventListener('click', hideModal);
+        notificationModal.addEventListener('click', (e) => {
+            if (e.target === notificationModal) { // Close when clicking outside the modal content
+                hideModal();
+            }
+        });
+        
+        // Handler untuk drag and drop
         ['dragenter', 'dragover'].forEach(eventName => {
             fileInputLabel.addEventListener(eventName, (e) => {
                 e.preventDefault();
                 fileInputLabel.classList.add('drag-over');
             }, false);
         });
-
         ['dragleave', 'drop'].forEach(eventName => {
             fileInputLabel.addEventListener(eventName, (e) => {
                 e.preventDefault();
@@ -525,14 +490,15 @@
             }, false);
         });
 
+        // Tangani drop file
         fileInputLabel.addEventListener('drop', e => {
             fileInput.files = e.dataTransfer.files;
             updateFileInfo();
-            uploadFile();
-        });
+            uploadFile(); // Upload otomatis saat drop
+        }, false);
 
-        // Render riwayat saat halaman dimuat
-        renderHistory();
+        // Initial render of history
+        renderUploadHistory();
     });
     </script>
 </body>
