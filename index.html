@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Senka Uploader - Unggah & Bagikan File</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" integrity="sha512-SnH5WK+bZxgPHs44uWIX+LLJAJ9/2PkPKZ5QiAj6oNsWfGAf3IINokB/xLcFNjGkL/W6yW1sJ1L9/d4f4z3Q==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style type="text/tailwindcss">
+        @layer base {
+            html {
+                font-family: 'Poppins', system-ui, sans-serif;
+            }
+        }
+        /* Custom scrollbar for history */
+        #uploadHistory::-webkit-scrollbar {
+            width: 8px;
+        }
+        #uploadHistory::-webkit-scrollbar-track {
+            background: #2a3040; /* Darker track */
+            border-radius: 10px;
+        }
+        #uploadHistory::-webkit-scrollbar-thumb {
+            background: #475569; /* Slate-600 like */
+            border-radius: 10px;
+        }
+        #uploadHistory::-webkit-scrollbar-thumb:hover {
+            background: #64748b; /* Slate-500 like */
+        }
+    </style>
+</head>
+<body class="bg-[#101018] text-slate-100 min-h-screen flex flex-col items-center justify-center p-4 sm:p-6 bg-[radial-gradient(circle_at_15%_50%,_rgba(0,191,255,0.1),_transparent_40%),radial-gradient(circle_at_85%_30%,_rgba(138,43,226,0.1),_transparent_40%)] overflow-y-auto">
+
+    <main class="w-full max-w-2xl mx-auto my-8">
+        <div class="bg-slate-900/50 backdrop-blur-xl border border-slate-700/50 rounded-2xl shadow-2xl shadow-black/30 p-6 sm:p-10 transition-all duration-300">
+            
+            <div class="text-center mb-8">
+                <h2 class="text-4xl font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-sky-400 to-violet-500">
+                    Senka Uploader
+                </h2>
+                <p class="text-slate-400 mt-2">Unggah dan bagikan file Anda dengan mudah.</p>
+                <a href="./public/docs.html" target="_blank" class="text-sky-400 hover:underline text-sm mt-2 inline-block">
+                    <i class="fas fa-book mr-1"></i> Dokumentasi API
+                </a>
+            </div>
+            
+            <div class="relative my-8">
+                <label for="fileInput" class="file-input-label block p-10 border-2 border-dashed border-slate-600 rounded-2xl text-center cursor-pointer bg-slate-800/20 transition-all duration-300 ease-in-out hover:border-sky-500 hover:bg-slate-800/50 [&.drag-over]:border-sky-500 [&.drag-over]:bg-slate-800/50">
+                    
+                    <i class="fas fa-cloud-upload-alt text-slate-400 text-5xl mb-4 transition-colors duration-300"></i>
+                    
+                    <span class="mt-2 block text-slate-300 sm:text-base font-semibold">Tarik file ke sini atau <span class="text-sky-400">klik untuk memilih</span></span>
+                    <span class="block text-xs text-slate-500 mt-1">Ukuran file maksimal: 50MB</span>
+                </label>
+                <input type="file" id="fileInput" class="absolute top-0 left-0 w-full h-full opacity-0 cursor-pointer"/>
+            </div>
+            
+            <div id="selectedFile" class="hidden mt-6 p-4 bg-slate-800/50 rounded-xl border-l-4 border-sky-500 flex-col gap-1">
+                <div class="flex items-center">
+                    <span id="fileIcon" class="mr-3 text-xl w-6 text-center flex-shrink-0"></span>
+                    <span id="fileNameDisplay" class="text-slate-100 font-medium truncate flex-1"></span>
+                    <button id="clearFileBtn" class="ml-auto text-slate-400 hover:text-red-500 transition"><i class="fas fa-times-circle"></i></button>
+                </div>
+                <span id="fileSize" class="text-sm text-slate-400 ml-[34px]"></span>
+                <div id="imagePreviewContainer" class="hidden mt-4 bg-slate-900 rounded-lg border border-slate-700 p-2 text-center max-h-80 overflow-y-auto">
+                    <p class="text-slate-400 text-sm mb-2">Pratinjau Gambar:</p>
+                    <img id="imagePreview" src="" alt="Image Preview" class="max-w-full h-auto mx-auto object-contain">
+                </div>
+            </div>
+            
+            <div class="mt-6">
+                 <button id="uploadBtn" class="w-full py-3 px-6 bg-gradient-to-r from-sky-500 to-violet-600 rounded-lg text-slate-50 font-semibold uppercase tracking-wider transition-all duration-300 ease-in-out shadow-[0_4px_20px_rgba(100,150,255,0.2)] hover:shadow-xl hover:shadow-sky-500/20 hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100 disabled:shadow-[0_4px_20px_rgba(100,150,255,0.2)]">
+                    Upload File
+                </button>
+            </div>
+            
+            <div class="mt-8">
+                <h3 class="mb-4 text-lg font-medium inline-block pb-1 border-b-2 border-slate-600">Hasil Upload</h3>
+                
+                <div id="urlResult" class="bg-slate-900/70 p-5 rounded-2xl mt-2 border border-slate-700 min-h-[120px] flex flex-col transition-all duration-300 text-sm 
+                                         empty:justify-center empty:items-center empty:text-center 
+                                         empty:before:content-['Hasil_akan_ditampilkan_di_sini.'] empty:before:text-slate-500
+                                         [&:not(:empty)]:items-stretch [&:not(:empty)]:text-left">
+                </div>
+            </div>
+
+            <div class="mt-10">
+                <h3 class="mb-4 text-lg font-medium inline-block pb-1 border-b-2 border-slate-600">Riwayat Upload</h3>
+                <div id="uploadHistory" class="bg-slate-900/70 p-5 rounded-2xl mt-2 border border-slate-700 min-h-[100px] max-h-96 overflow-y-auto flex flex-col gap-3
+                                          empty:justify-center empty:items-center empty:text-center
+                                          empty:before:content-['Riwayat_upload_akan_muncul_di_sini.'] empty:before:text-slate-500">
+                    </div>
+            </div>
+
+        </div>
+    </main>
+
+    <div id="notificationModal" class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50 hidden transition-opacity duration-300 opacity-0">
+        <div class="bg-slate-800 p-6 rounded-lg shadow-xl max-w-sm w-full border border-slate-700 text-center relative">
+            <button id="closeModal" class="absolute top-2 right-2 text-slate-400 hover:text-slate-200 text-2xl">&times;</button>
+            <i id="modalIcon" class="text-5xl mb-4"></i>
+            <h4 id="modalTitle" class="text-xl font-semibold mb-2"></h4>
+            <p id="modalMessage" class="text-slate-300"></p>
+            <button id="modalActionBtn" class="mt-5 py-2 px-4 bg-sky-600 rounded-md text-slate-50 font-semibold hover:bg-sky-500 hidden">OK</button>
+        </div>
+    </div>
+
+
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+
+        // --- BACKEND API CONFIGURATION ---
+        // Sesuaikan dengan URL server backend Anda
+        const API_BASE_URL = window.location.origin; // http://localhost:5000 (otomatis mendeteksi)
+
+        // --- DOM ELEMENT REFERENCES ---
+        const fileInput = document.getElementById('fileInput');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const urlResult = document.getElementById('urlResult');
+        const selectedFileDiv = document.getElementById('selectedFile');
+        const fileNameDisplay = document.getElementById('fileNameDisplay');
+        const fileSizeDisplay = document.getElementById('fileSize');
+        const fileIconDisplay = document.getElementById('fileIcon');
+        const fileInputLabel = document.querySelector('.file-input-label');
+        const imagePreviewContainer = document.getElementById('imagePreviewContainer');
+        const imagePreviewImg = document.getElementById('imagePreview');
+        const uploadHistoryDiv = document.getElementById('uploadHistory');
+        const clearFileBtn = document.getElementById('clearFileBtn');
+
+        // Modal Elements
+        const notificationModal = document.getElementById('notificationModal');
+        const closeModalBtn = document.getElementById('closeModal');
+        const modalIcon = document.getElementById('modalIcon');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalMessage = document.getElementById('modalMessage');
+        const modalActionBtn = document.getElementById('modalActionBtn');
+
+
+        // --- STATE & CACHE ---
+        // Cache tidak lagi digunakan karena setiap upload akan melalui backend
+        // const fileCache = new Map();
+        const uploadHistory = JSON.parse(localStorage.getItem('senkaUploadHistory')) || []; // Load history from localStorage
+        const fileIcons = { 
+            'pdf': '<i class="fas fa-file-pdf text-red-500"></i>', 
+            'zip': '<i class="fas fa-file-archive text-yellow-500"></i>', 
+            'rar': '<i class="fas fa-file-archive text-yellow-500"></i>', 
+            '7z': '<i class="fas fa-file-archive text-yellow-500"></i>', 
+            'js': '<i class="fab fa-js-square text-yellow-400"></i>', 
+            'json': '<i class="fas fa-file-code text-blue-400"></i>', 
+            'html': '<i class="fab fa-html5 text-orange-500"></i>', 
+            'css': '<i class="fab fa-css3-alt text-blue-500"></i>', 
+            'png': '<i class="fas fa-file-image text-purple-400"></i>', 
+            'jpg': '<i class="fas fa-file-image text-purple-400"></i>', 
+            'jpeg': '<i class="fas fa-file-image text-purple-400"></i>', 
+            'gif': '<i class="fas fa-file-image text-purple-400"></i>', 
+            'svg': '<i class="fas fa-file-image text-purple-400"></i>', 
+            'mp4': '<i class="fas fa-file-video text-pink-500"></i>', 
+            'mov': '<i class="fas fa-file-video text-pink-500"></i>', 
+            'avi': '<i class="fas fa-file-video text-pink-500"></i>', 
+            'mp3': '<i class="fas fa-file-audio text-green-500"></i>', 
+            'wav': '<i class="fas fa-file-audio text-green-500"></i>', 
+            'txt': '<i class="fas fa-file-alt text-gray-400"></i>', 
+            'doc': '<i class="fas fa-file-word text-blue-600"></i>', 
+            'docx': '<i class="fas fa-file-word text-blue-600"></i>', 
+            'xls': '<i class="fas fa-file-excel text-green-600"></i>', 
+            'xlsx': '<i class="fas fa-file-excel text-green-600"></i>', 
+            'ppt': '<i class="fas fa-file-powerpoint text-orange-600"></i>', 
+            'pptx': '<i class="fas fa-file-powerpoint text-orange-600"></i>', 
+            'default': '<i class="fas fa-file text-slate-400"></i>' 
+        };
+
+        // --- CORE FUNCTIONS ---
+
+        /**
+         * Mengirim file ke API backend untuk diupload.
+         */
+        const uploadFile = async () => {
+            const file = fileInput.files[0];
+            if (!file) {
+                showModal('Peringatan', 'Pilih file terlebih dahulu!', 'warning');
+                return;
+            }
+
+            setLoadingState(true);
+            renderLoadingMessage();
+            urlResult.innerHTML = ''; // Bersihkan hasil sebelumnya
+
+            const formData = new FormData();
+            formData.append('file', file); // 'file' adalah nama field yang diharapkan oleh Multer di backend
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/upload`, {
+                    method: 'POST',
+                    body: formData // FormData secara otomatis mengatur Content-Type: multipart/form-data
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    renderSuccessMessage(result.fileUrl);
+                    addUploadToHistory(result.fileName, result.fileUrl);
+                    showModal('Sukses', 'File berhasil diupload!', 'success');
+                } else {
+                    renderErrorMessage(result.message || 'Terjadi kesalahan saat upload.');
+                    showModal('Gagal', result.message || 'Terjadi kesalahan saat upload.', 'error');
+                }
+
+            } catch (error) {
+                console.error("Detail Error:", error);
+                renderErrorMessage(`Koneksi gagal atau kesalahan server: ${error.message}`);
+                showModal('Gagal', `Tidak dapat terhubung ke server atau terjadi kesalahan: ${error.message}`, 'error');
+            } finally {
+                setLoadingState(false);
+                clearSelectedFile(); // Clear selected file info and input
+            }
+        };
+        
+        /**
+         * Menambahkan item ke riwayat upload.
+         * @param {string} fileName - Nama file asli.
+         * @param {string} fileUrl - URL file yang diupload.
+         */
+        const addUploadToHistory = (fileName, fileUrl) => {
+            const uploadTime = new Date().toLocaleString('id-ID', {
+                year: 'numeric', month: 'short', day: 'numeric',
+                hour: '2-digit', minute: '2-digit', second: '2-digit',
+                hour12: false // Format 24 jam
+            });
+            const historyItem = { fileName, fileUrl, uploadTime };
+            uploadHistory.unshift(historyItem); // Add to the beginning
+            if (uploadHistory.length > 15) { // Batasi riwayat menjadi 15 item
+                uploadHistory.pop();
+            }
+            localStorage.setItem('senkaUploadHistory', JSON.stringify(uploadHistory));
+            renderUploadHistory();
+        };
+
+        /**
+         * Menghapus item dari riwayat upload.
+         * @param {number} index - Indeks item yang akan dihapus.
+         */
+        const deleteHistoryItem = (index) => {
+            uploadHistory.splice(index, 1);
+            localStorage.setItem('senkaUploadHistory', JSON.stringify(uploadHistory));
+            renderUploadHistory();
+            showModal('Info', 'Riwayat berhasil dihapus.', 'info');
+        };
+        
+        // --- UI RENDERING FUNCTIONS ---
+
+        /**
+         * Menampilkan status loading di kotak hasil.
+         */
+        const renderLoadingMessage = () => {
+            urlResult.innerHTML = `<div class="flex items-center justify-center gap-3 py-6"><div class="w-5 h-5 border-2 border-sky-500/25 border-t-sky-400 rounded-full animate-spin"></div><span>Mengupload file...</span></div>`;
+        };
+
+        /**
+         * Menampilkan pesan sukses dengan URL file dan tombol salin.
+         * @param {string} url - URL akhir dari file yang diupload.
+         */
+        const renderSuccessMessage = (url) => {
+            urlResult.innerHTML = `
+                <strong class="block mb-2 font-semibold text-lime-400">✓ Upload berhasil!</strong>
+                <div class="relative flex items-center">
+                    <input readonly value="${url}" class="w-full bg-slate-800/60 text-sky-300 rounded-md py-2 px-3 pr-24 border border-slate-600 focus:outline-none focus:border-sky-500 text-xs sm:text-sm truncate">
+                    <button class="btn-copy absolute right-1 top-1/2 -translate-y-1/2 py-1.5 px-3 bg-sky-600 rounded text-slate-50 font-semibold transition hover:bg-sky-500 text-xs sm:text-sm">Salin</button>
+                </div>
+                <div class="mt-4 text-center">
+                    <a href="${url}" target="_blank" class="text-sky-400 hover:underline text-sm"><i class="fas fa-external-link-alt mr-1"></i> Lihat File</a>
+                </div>`;
+            urlResult.querySelector('.btn-copy').addEventListener('click', (e) => copyToClipboard(url, e.target, 'Salin'));
+        };
+        
+        /**
+         * Menampilkan pesan error di kotak hasil.
+         * @param {string} message - Pesan error yang ditampilkan.
+         */
+        const renderErrorMessage = (message) => {
+            urlResult.innerHTML = `<strong class="block mb-2 font-semibold text-red-500">✗ Gagal upload:</strong><div class="text-sm text-slate-300">${message}</div>`;
+        };
+        
+        /**
+         * Memperbarui UI untuk menampilkan informasi file yang dipilih.
+         */
+        const updateFileInfo = () => {
+            const file = fileInput.files[0];
+            selectedFileDiv.classList.toggle('hidden', !file);
+            selectedFileDiv.classList.toggle('flex', !!file);
+            imagePreviewContainer.classList.add('hidden'); // Sembunyikan preview default
+            imagePreviewImg.src = ''; // Bersihkan src gambar
+
+            if (file) {
+                fileNameDisplay.textContent = file.name;
+                fileSizeDisplay.textContent = formatFileSize(file.size);
+                const fileExt = file.name.split('.').pop()?.toLowerCase() || 'default';
+                fileIconDisplay.innerHTML = fileIcons[fileExt] || fileIcons['default'];
+
+                // Tampilkan preview gambar jika file adalah gambar
+                if (file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        imagePreviewImg.src = e.target.result;
+                        imagePreviewContainer.classList.remove('hidden');
+                    };
+                    reader.readAsDataURL(file);
+                }
+            }
+        };
+
+        /**
+         * Membersihkan informasi file yang dipilih dan input file.
+         */
+        const clearSelectedFile = () => {
+            fileInput.value = ''; // Reset input file
+            selectedFileDiv.classList.add('hidden');
+            selectedFileDiv.classList.remove('flex');
+            fileNameDisplay.textContent = '';
+            fileSizeDisplay.textContent = '';
+            fileIconDisplay.innerHTML = '';
+            imagePreviewContainer.classList.add('hidden');
+            imagePreviewImg.src = '';
+        };
+        
+        /**
+         * Mengatur status loading pada tombol upload.
+         * @param {boolean} isLoading - Apakah aplikasi sedang mengupload.
+         */
+        const setLoadingState = (isLoading) => {
+            uploadBtn.disabled = isLoading;
+            uploadBtn.textContent = isLoading ? 'Mengupload...' : 'Upload File';
+        };
+
+        /**
+         * Merender riwayat upload ke UI.
+         */
+        const renderUploadHistory = () => {
+            uploadHistoryDiv.innerHTML = ''; // Clear existing history
+            if (uploadHistory.length === 0) {
+                return; // Tailwind `empty:` utility handles this.
+            }
+
+            uploadHistory.forEach((item, index) => {
+                const historyItemDiv = document.createElement('div');
+                historyItemDiv.className = 'history-item bg-slate-800/80 p-3 rounded-lg flex flex-col sm:flex-row items-start sm:items-center justify-between border border-slate-700 hover:bg-slate-700/80 transition';
+                historyItemDiv.innerHTML = `
+                    <div class="flex-1 truncate mr-4 w-full sm:w-auto">
+                        <a href="${item.fileUrl}" target="_blank" class="text-sky-300 font-medium hover:underline block truncate">${item.fileName}</a>
+                        <span class="text-xs text-slate-400 mt-1 block">${item.uploadTime}</span>
+                    </div>
+                    <div class="flex space-x-2 mt-3 sm:mt-0 flex-shrink-0">
+                        <button class="btn-copy-history py-1 px-2 bg-sky-600 rounded text-slate-50 text-xs transition hover:bg-sky-500" data-url="${item.fileUrl}">Salin</button>
+                        <button class="btn-delete-history py-1 px-2 bg-red-600 rounded text-slate-50 text-xs transition hover:bg-red-500" data-index="${index}">Hapus</button>
+                    </div>
+                `;
+                uploadHistoryDiv.appendChild(historyItemDiv);
+            });
+
+            // Add event listeners for new history items
+            uploadHistoryDiv.querySelectorAll('.btn-copy-history').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const url = e.target.dataset.url;
+                    copyToClipboard(url, e.target, 'Salin');
+                });
+            });
+
+            uploadHistoryDiv.querySelectorAll('.btn-delete-history').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const index = parseInt(e.target.dataset.index);
+                    showModal('Konfirmasi Hapus', 'Anda yakin ingin menghapus riwayat ini?', 'confirm', () => deleteHistoryItem(index));
+                });
+            });
+        };
+
+        // --- UTILITY FUNCTIONS ---
+
+        /**
+         * Menyalin teks ke clipboard.
+         * @param {string} text - Teks yang akan disalin.
+         * @param {HTMLElement} btnElement - Elemen tombol yang diklik.
+         * @param {string} originalText - Teks asli tombol.
+         */
+        const copyToClipboard = (text, btnElement, originalText) => {
+            navigator.clipboard.writeText(text).then(() => {
+                if (btnElement) {
+                    btnElement.textContent = '✓ Tersalin!';
+                    setTimeout(() => { btnElement.textContent = originalText; }, 2000);
+                }
+            }).catch(err => {
+                console.error('Gagal menyalin:', err);
+                if (btnElement) {
+                    btnElement.textContent = 'Gagal Salin';
+                    setTimeout(() => { btnElement.textContent = originalText; }, 2000);
+                }
+            });
+        };
+        
+        /**
+         * Mengformat ukuran file dalam byte menjadi string yang mudah dibaca.
+         * @param {number} bytes - Ukuran file dalam byte.
+         * @returns {string} - Ukuran file yang diformat (misal, "1.23 MB").
+         */
+        const formatFileSize = (bytes) => {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
+        };
+
+        /**
+         * Menampilkan modal notifikasi kustom.
+         * @param {string} title - Judul modal.
+         * @param {string} message - Pesan modal.
+         * @param {'success'|'error'|'warning'|'info'|'confirm'} type - Tipe modal.
+         * @param {function} [onConfirm] - Callback untuk tipe 'confirm'.
+         */
+        const showModal = (title, message, type, onConfirm = null) => {
+            modalTitle.textContent = title;
+            modalMessage.textContent = message;
+            modalActionBtn.onclick = null;
+            modalActionBtn.classList.add('hidden');
+
+            // Set icon and colors based on type
+            modalIcon.className = 'text-5xl mb-4'; // Reset classes
+            switch (type) {
+                case 'success':
+                    modalIcon.innerHTML = '<i class="fas fa-check-circle text-lime-500"></i>';
+                    break;
+                case 'error':
+                    modalIcon.innerHTML = '<i class="fas fa-times-circle text-red-500"></i>';
+                    break;
+                case 'warning':
+                    modalIcon.innerHTML = '<i class="fas fa-exclamation-triangle text-yellow-500"></i>';
+                    break;
+                case 'info':
+                    modalIcon.innerHTML = '<i class="fas fa-info-circle text-blue-500"></i>';
+                    break;
+                case 'confirm':
+                    modalIcon.innerHTML = '<i class="fas fa-question-circle text-sky-500"></i>';
+                    modalActionBtn.classList.remove('hidden');
+                    modalActionBtn.textContent = 'Ya';
+                    modalActionBtn.onclick = () => {
+                        if (onConfirm) onConfirm();
+                        hideModal();
+                    };
+                    break;
+                default:
+                    modalIcon.innerHTML = '';
+            }
+
+            notificationModal.classList.remove('hidden');
+            setTimeout(() => notificationModal.classList.remove('opacity-0'), 10); // Trigger transition
+        };
+
+        const hideModal = () => {
+            notificationModal.classList.add('opacity-0');
+            setTimeout(() => notificationModal.classList.add('hidden'), 300); // Allow transition to finish
+        };
+
+        // --- EVENT LISTENERS ---
+        uploadBtn.addEventListener('click', uploadFile);
+        fileInput.addEventListener('change', updateFileInfo);
+        clearFileBtn.addEventListener('click', clearSelectedFile);
+        closeModalBtn.addEventListener('click', hideModal);
+        notificationModal.addEventListener('click', (e) => {
+            if (e.target === notificationModal) { // Close when clicking outside the modal content
+                hideModal();
+            }
+        });
+        
+        // Handler untuk drag and drop
+        ['dragenter', 'dragover'].forEach(eventName => {
+            fileInputLabel.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                fileInputLabel.classList.add('drag-over');
+            }, false);
+        });
+        ['dragleave', 'drop'].forEach(eventName => {
+            fileInputLabel.addEventListener(eventName, (e) => {
+                e.preventDefault();
+                fileInputLabel.classList.remove('drag-over');
+            }, false);
+        });
+
+        // Tangani drop file
+        fileInputLabel.addEventListener('drop', e => {
+            fileInput.files = e.dataTransfer.files;
+            updateFileInfo();
+            uploadFile(); // Upload otomatis saat drop
+        }, false);
+
+        // Initial render of history
+        renderUploadHistory();
+    });
+    </script>
+</body>
+</html>
